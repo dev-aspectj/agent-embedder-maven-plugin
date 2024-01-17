@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.7.18</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>dev.aspectj</groupId>
+  <artifactId>spring-boot-it</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+
+  <properties>
+    <java.version>8</java.version>
+    <aspectj.version>1.9.21</aspectj.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <!-- Create executable Spring Boot fat JAR -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- Embed Java agent for automatic execution -->
+      <plugin>
+        <groupId>dev.aspectj</groupId>
+        <artifactId>agent-embedder-maven-plugin</artifactId>
+        <version>@project.version@</version>
+        <executions>
+          <execution>
+            <id>embed-aspectj-weaver</id>
+            <goals>
+              <goal>embed</goal>
+            </goals>
+            <configuration>
+              <javaAgents>
+                <agent>
+                  <groupId>org.aspectj</groupId>
+                  <artifactId>aspectjweaver</artifactId>
+                  <agentClass>org.aspectj.weaver.loadtime.Agent</agentClass>
+                </agent>
+              </javaAgents>
+              <removeEmbeddedAgents>true</removeEmbeddedAgents>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Run Spring Boot app JAR with embedded Java agent, generating log output to be checked in verify.groovy -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.1</version>
+        <executions>
+          <execution>
+            <id>run-boot-executable-jar</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <!-- Use same JDK as fork parent -->
+          <executable>@parent.java.home@/bin/java</executable>
+          <arguments>
+            <argument>-Duser.language=en_US</argument>
+            <argument>-jar</argument>
+            <argument>${project.build.directory}/${project.build.finalName}.${project.packaging}</argument>
+          </arguments>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <!-- AspectJ load-time weaving agent -->
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+      <version>${aspectj.version}</version>
+    </dependency>
+    <!-- Using these instead of spring-boot-starter makes the repackaged JAR smaller -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+  </dependencies>
+</project>

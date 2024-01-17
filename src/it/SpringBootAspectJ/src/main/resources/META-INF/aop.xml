@@ -1,0 +1,15 @@
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "https://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+  <!-- Add this argument to options to make AspectJ logs use the Spring logging framework. -->
+  <!-- -XmessageHandlerClass:org.springframework.aop.aspectj.AspectJWeaverMessageHandler -->
+  <weaver options="-nowarn -showWeaveInfo -Xlint:ignore">
+    <include within="dev.aspectj..*"/>
+  </weaver>
+
+  <aspects>
+    <!-- declare aspects to the weaver -->
+    <aspect name="dev.aspectj.FieldWriteAccessLogAspect"/>
+    <exclude within="org.springframework..*"/>
+  </aspects>
+
+</aspectj>
