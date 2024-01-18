@@ -135,4 +135,25 @@ class AgentEmbedderMojoTest extends Specification {
     false            | true
 //    false            | false
   }
+
+  def 'path separator is adjusted correctly'() {
+    given:
+    FileSystem fileSystem = Mock() {
+      getSeparator() >> fsSeparator
+    }
+
+    when:
+    def adjustedPath = new AgentEmbedderMojo().adjustPathSeparatorToHostFS(inputPath, fileSystem)
+
+    then:
+    adjustedPath.contains(fsSeparator)
+    !adjustedPath.contains(File.separator) || File.separator == fsSeparator
+
+    where:
+    fsSeparator | inputPath
+    '\\'        | 'c:\\Users\\me\\Documents\\foo.txt'
+    '/'         | 'c:\\Users\\me\\Documents\\foo.txt'
+    '\\'        | '../other/directory/hello.html'
+    '/'         | '../other/directory/hello.html'
+  }
 }
