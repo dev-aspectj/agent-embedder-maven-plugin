@@ -91,6 +91,14 @@ class InMemoryFileSystemTool implements AutoCloseable {
     getJarFS(hostFS, targetJarLocation, create)
   }
 
+  FileSystem getNestedAgentJarFS(boolean create) {
+    // Do not use try-with-resources or otherwise close targetJarFS. Otherwise, using the nested FS will yield a
+    // ClosedFileSystemException. I.e., we have a FS leak here. But as soon as the root FS is closed, all subordinate
+    // ones will be closed, too.
+    FileSystem targetJarFS = getTargetJarFS(false)
+    getJarFS(targetJarFS, nestedAgentJarLocation, create)
+  }
+
   static FileSystem getJarFS(FileSystem hostFS, String location, boolean create) {
     Path jarPath = hostFS.getPath(location)
     if (!create && !Files.exists(jarPath))
@@ -165,7 +173,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
 
   static List<FileInfo> getFSInfo(FileSystem fileSystem) {
     new ArrayList<FileInfo>().tap {
-      fileSystem?.rootDirectories.each { rootDir ->
+      fileSystem?.rootDirectories?.each { rootDir ->
         Files.find(rootDir, Integer.MAX_VALUE, (path, attributes) -> true)
           .each { path -> add(new FileInfo(path, Files.size(path), Files.isDirectory(path))) }
       }
@@ -178,10 +186,20 @@ class InMemoryFileSystemTool implements AutoCloseable {
   }
 
   static void main(String[] args) {
-    InMemoryFileSystemTool fileSystemCreator = new InMemoryFileSystemTool().debug(true)
-    FileSystem hostFS = fileSystemCreator.createHostFS()
-    fileSystemCreator.dumpFS(fileSystemCreator.getAgentJarFS(false), 'xxx agent')
-    fileSystemCreator.dumpFS(fileSystemCreator.getTargetJarFS(false), 'xxx target')
+    InMemoryFileSystemTool fileSystemCreator = new InMemoryFileSystemTool().debug(false)
+
+    try (FileSystem hostFS = fileSystemCreator.createHostFS()) {
+      fileSystemCreator.dumpFS(hostFS, 'host')
+      try (FileSystem agentJarFS = fileSystemCreator.getAgentJarFS(false)) {
+        fileSystemCreator.dumpFS(agentJarFS, 'agent')
+      }
+      try (FileSystem targetJarFS = fileSystemCreator.getTargetJarFS(false)) {
+        fileSystemCreator.dumpFS(targetJarFS, 'target')
+      }
+      try (FileSystem nestedAgentJarFS = fileSystemCreator.getNestedAgentJarFS(false)) {
+        fileSystemCreator.dumpFS(nestedAgentJarFS, 'nested agent')
+      }
+    }
   }
 
 }
