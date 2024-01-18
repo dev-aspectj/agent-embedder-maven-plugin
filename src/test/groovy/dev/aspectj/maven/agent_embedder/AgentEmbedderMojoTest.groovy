@@ -92,9 +92,11 @@ class AgentEmbedderMojoTest extends Specification {
     when:
     mojo.javaAgents = [new JavaAgent('org.aspectj', 'aspectjweaver', null, 'org.aspectj.weaver.loadtime.Agent', null)]
     DefaultArtifact javaAgentArtifact = Spy(new DefaultArtifact('org.aspectj', 'aspectjweaver', '1.9.21', 'compile', 'jar', null, Mock(ArtifactHandler))) {
+      // Mock Maven API, i.e. we cannot use Java NIO
       getFile() >> new File(fsTool.agentJarLocation)
     }
     DefaultArtifact buildArtifact = Spy(new DefaultArtifact('dev.aspectj', 'my-project', '1.0', 'compile', 'jar', null, Mock(ArtifactHandler))) {
+      // Mock Maven API, i.e. we cannot use Java NIO
       getFile() >> new File(fsTool.targetJarLocation)
     }
     mojo.project = Mock(MavenProject) {
