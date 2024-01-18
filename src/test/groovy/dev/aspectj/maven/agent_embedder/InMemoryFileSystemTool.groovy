@@ -12,6 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 import static dev.aspectj.maven.agent_embedder.AgentEmbedderMojo.MANIFEST_PATH
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
 @Builder(
   builderStrategy = SimpleStrategy,
@@ -64,20 +65,25 @@ class InMemoryFileSystemTool implements AutoCloseable {
   }
 
   void createAgentJar(FileSystem fileSystem) {
-    createJar(fileSystem, agentJarLocation, agentJarLayoutDescriptor, 'agent JAR')
+    createJar(fileSystem, agentJarLocation, agentJarLayoutDescriptor, agentJarManifest, 'agent JAR')
   }
 
   void createTargetJar(FileSystem fileSystem) {
-    createJar(fileSystem, targetJarLocation, targetJarLayoutDescriptor, 'target JAR')
+    createJar(fileSystem, targetJarLocation, targetJarLayoutDescriptor, targetJarManifest, 'target JAR')
   }
 
   void createNestedAgentJar(FileSystem fileSystem) {
-    createJar(fileSystem, nestedAgentJarLocation, agentJarLayoutDescriptor, 'nested agent JAR')
+    createJar(fileSystem, nestedAgentJarLocation, agentJarLayoutDescriptor, targetJarManifest, 'nested agent JAR')
   }
 
-  void createJar(FileSystem fileSystem, String location, String layoutDescriptor, String debugLabel) {
+  void createJar(FileSystem fileSystem, String location, String layoutDescriptor, String manifest, String debugLabel) {
     try (FileSystem jarFS = getJarFS(fileSystem, location, true)) {
-      populateFS(jarFS, new File(layoutDescriptor))
+      populateFS(jarFS, layoutDescriptor)
+      if (manifest) {
+        // In populateFS, a default one-line manifest is created, if MANIFEST_PATH is found in the JAR layout
+        // descriptor. Therefore, explicitly work in REPLACE_EXISTING mode.
+        Files.copy(FileSystems.default.getPath(manifest), jarFS.getPath(MANIFEST_PATH), REPLACE_EXISTING)
+      }
       if (debug)
         dumpFS(jarFS, debugLabel)
     }
@@ -107,11 +113,11 @@ class InMemoryFileSystemTool implements AutoCloseable {
     FileSystems.newFileSystem(jarPath, [create: 'true'], (ClassLoader) null)
   }
 
-  static void populateFS(FileSystem fileSystem, File resourceFile) {
+  static void populateFS(FileSystem fileSystem, String layoutDescriptor) {
     final Path manifestPath = fileSystem.getPath(MANIFEST_PATH)
-    resourceFile.eachLine("UTF-8") { line, lineNo ->
+    Files.lines(FileSystems.default.getPath(layoutDescriptor)).forEach { line ->
       if (line.startsWith('#'))
-        return null
+        return
       Path path = fileSystem.getPath(line)
       if (line.endsWith('/'))
         Files.createDirectories(path)
