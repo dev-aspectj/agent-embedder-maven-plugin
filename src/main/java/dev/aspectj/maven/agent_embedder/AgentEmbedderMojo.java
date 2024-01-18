@@ -104,9 +104,9 @@ public class AgentEmbedderMojo extends AbstractMojo {
    * @return adjusted path using separators compatible with the target file system
    */
   protected String adjustPathSeparatorToHostFS(String path, FileSystem targetFS) {
-    return File.separator.equals(targetFS.getSeparator())
-      ? path
-      : path.replace(File.separator, targetFS.getSeparator());
+    final char toSeparator = targetFS.getSeparator().charAt(0);
+    final char fromSeparator = toSeparator == '/' ? '\\' : '/';
+    return path.replace(fromSeparator, toSeparator);
   }
 
   protected void addLauncherAgentToManifest(FileSystem jarFS, String agentClass) throws IOException, MojoExecutionException {
