@@ -6,6 +6,7 @@ import org.apache.maven.artifact.handler.ArtifactHandler
 import org.apache.maven.plugin.logging.Log
 import org.apache.maven.project.MavenProject
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.FileSystem
 import java.nio.file.Files
@@ -13,6 +14,7 @@ import java.nio.file.Files
 class AgentEmbedderMojoTest extends Specification {
   Log log = Mock()
 
+  @Unroll('#scenario')
   def 'call embedder steps manually'() {
     given:
     InMemoryFileSystemTool fsTool = new InMemoryFileSystemTool()
@@ -65,13 +67,14 @@ class AgentEmbedderMojoTest extends Specification {
     hostFS?.close()
 
     where:
-    doCreateAgentJar | doCreateNestedAgentJar
-    true             | true
-    true             | false
-    false            | true
-//    false            | false
+    scenario                           | doCreateAgentJar | doCreateNestedAgentJar
+    'create agent + nested agent JARs' | true             | true
+    'create agent JAR only'            | true             | false
+    'create nested agent JAR only'     | false            | true
+//    'create no agent JAR'              | false            | false
   }
 
+  @Unroll('#scenario')
   def 'execute embedder mojo'() {
     given:
     InMemoryFileSystemTool fsTool = new InMemoryFileSystemTool()
@@ -129,18 +132,18 @@ class AgentEmbedderMojoTest extends Specification {
     hostFS?.close()
 
     where:
-    doCreateAgentJar | doCreateNestedAgentJar
-    true             | true
-    true             | false
-    false            | true
-//    false            | false
+    scenario                           | doCreateAgentJar | doCreateNestedAgentJar
+    'create agent + nested agent JARs' | true             | true
+    'create agent JAR only'            | true             | false
+    'create nested agent JAR only'     | false            | true
+//    'create no agent JAR'              | false            | false
   }
 
+  @Unroll('#scenario')
   def 'path separator is adjusted correctly'() {
     given:
-    FileSystem fileSystem = Mock() {
-      getSeparator() >> fsSeparator
-    }
+    FileSystem fileSystem = Mock()
+    fileSystem.getSeparator() >> fsSeparator
 
     when:
     def adjustedPath = new AgentEmbedderMojo().adjustPathSeparatorToHostFS(inputPath, fileSystem)
@@ -150,10 +153,12 @@ class AgentEmbedderMojoTest extends Specification {
     !adjustedPath.contains(File.separator) || File.separator == fsSeparator
 
     where:
-    fsSeparator | inputPath
-    '\\'        | 'c:\\Users\\me\\Documents\\foo.txt'
-    '/'         | 'c:\\Users\\me\\Documents\\foo.txt'
-    '\\'        | '../other/directory/hello.html'
-    '/'         | '../other/directory/hello.html'
+    scenario                              | fsSeparator | inputPath
+    'backslash separator, backslash path' | '\\'        | 'c:\\Users\\me\\Documents\\foo.txt'
+    'slash separator, backslash path'     | '/'         | 'c:\\Users\\me\\Documents\\foo.txt'
+    'backslash separator, slash path'     | '\\'        | '../other/directory/hello.html'
+    'slash separator, slash path'         | '/'         | '../other/directory/hello.html'
+    'backslash separator, mixed path'     | '\\'        | 'c:\\Users\\me\\repository\\org/acme/foo/1.0/foo-1.0.jar'
+    'slash separator, mixed path'         | '/'         | 'c:\\Users\\me\\repository\\org/acme/foo/1.0/foo-1.0.jar'
   }
 }
