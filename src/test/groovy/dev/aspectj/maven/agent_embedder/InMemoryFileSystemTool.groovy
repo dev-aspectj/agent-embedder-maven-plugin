@@ -24,10 +24,14 @@ import static dev.aspectj.maven.agent_embedder.AgentEmbedderMojo.MANIFEST_PATH
   ]
 )
 class InMemoryFileSystemTool implements AutoCloseable {
+
+  // The unit tests should run successfully with both JimFS and MemoryFileSystem.
+  // Decide here, which in-memory FS to use.
   static USE_JIMFS = false
+
   // We need a file system configuration with the working dir set to '/'.
   // See https://github.com/google/jimfs/issues/74
-  static final Configuration FS_CONFIG = Configuration.unix().toBuilder().setWorkingDirectory('/').build()
+  static final Configuration JIMFS_CONFIG = Configuration.unix().toBuilder().setWorkingDirectory('/').build()
 
   // These defaults can be overridden by builder methods
   String agentJarLayoutDescriptor = 'src/test/resources/files_aspectjweaver-jar.txt'
@@ -45,7 +49,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
   private FileSystem hostFS
 
   FileSystem createHostFS() {
-    hostFS = USE_JIMFS ? Jimfs.newFileSystem(FS_CONFIG) : MemoryFileSystemBuilder.newEmpty().build()
+    hostFS = USE_JIMFS ? Jimfs.newFileSystem(JIMFS_CONFIG) : MemoryFileSystemBuilder.newEmpty().build()
     if (doCreateAgentJar)
       createAgentJar(hostFS)
     createTargetJar(hostFS)
