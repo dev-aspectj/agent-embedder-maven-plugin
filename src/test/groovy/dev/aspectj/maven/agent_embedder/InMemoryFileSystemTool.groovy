@@ -5,11 +5,13 @@ import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import groovy.transform.builder.Builder
 import groovy.transform.builder.SimpleStrategy
+import spock.util.environment.Jvm
 
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.zip.ZipOutputStream
 
 import static dev.aspectj.maven.agent_embedder.AgentEmbedderMojo.MANIFEST_PATH
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING
@@ -82,7 +84,8 @@ class InMemoryFileSystemTool implements AutoCloseable {
       if (manifest) {
         // In populateFS, a default one-line manifest is created, if MANIFEST_PATH is found in the JAR layout
         // descriptor. Therefore, explicitly work in REPLACE_EXISTING mode.
-        Files.copy(FileSystems.default.getPath(manifest), jarFS.getPath(MANIFEST_PATH), REPLACE_EXISTING)
+        // TODO: Remove '[] as String[]' after https://issues.apache.org/jira/browse/GROOVY-11293 fix
+        Files.copy(FileSystems.default.getPath(manifest, [] as String[]), jarFS.getPath(MANIFEST_PATH, [] as String[]), REPLACE_EXISTING)
       }
       if (debug)
         dumpFS(jarFS, debugLabel)
@@ -110,12 +113,21 @@ class InMemoryFileSystemTool implements AutoCloseable {
     if (!create && !Files.exists(jarPath))
       return null
     Files.createDirectories(jarPath.parent)
-    FileSystems.newFileSystem(jarPath, [create: 'true'], (ClassLoader) null)
+
+    // Java 13+ has a new constructor capable of creating a zip FS from a path in 'create' mode
+    if (Jvm.current.java13Compatible)
+      return FileSystems.newFileSystem(jarPath, [create: 'true'])
+
+    // Older Java versions can only open a zip FS from a path, if the zip archive exists already.
+    // Therefore, create an empty zip archive first.
+    new ZipOutputStream(Files.newOutputStream(jarPath)).close()
+    return FileSystems.newFileSystem(jarPath, null as ClassLoader)
   }
 
   static void populateFS(FileSystem fileSystem, String layoutDescriptor) {
     final Path manifestPath = fileSystem.getPath(MANIFEST_PATH)
-    Files.lines(FileSystems.default.getPath(layoutDescriptor)).forEach { line ->
+    // TODO: Remove '[] as String[]' after https://issues.apache.org/jira/browse/GROOVY-11293 fix
+    Files.lines(FileSystems.default.getPath(layoutDescriptor, [] as String[])).forEach { line ->
       if (line.startsWith('#'))
         return
       Path path = fileSystem.getPath(line)
