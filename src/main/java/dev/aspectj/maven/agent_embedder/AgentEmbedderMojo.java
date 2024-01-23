@@ -41,7 +41,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
    * Java agents to embed into the main artifact
    */
   @Parameter(required = true)
-  protected List<JavaAgent> javaAgents;
+  protected List<JavaAgentInfo> javaAgents;
 
   /**
    * Should agent JARs described by {@code javaAgents}, if found embedded inside the fat JAR, be deleted after expanding
@@ -64,7 +64,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
 
   public void execute() throws MojoExecutionException {
     getLog().info("Embedding java agents");
-    for (JavaAgent agent : javaAgents) {
+    for (JavaAgentInfo agent : javaAgents) {
       String agentJarLocation = project.getArtifacts().stream()
         .filter(agent::matchesArtifact)
         .distinct()

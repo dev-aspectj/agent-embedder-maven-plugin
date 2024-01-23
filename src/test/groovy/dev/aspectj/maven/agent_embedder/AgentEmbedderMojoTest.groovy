@@ -31,7 +31,7 @@ class AgentEmbedderMojoTest extends Specification {
     !doCreateAgentJar || hostFSInfo.find { it.path.toString() == fsTool.agentJarLocation }
 
     when:
-    mojo.javaAgents = [new JavaAgent('org.aspectj', 'aspectjweaver', null, 'org.aspectj.weaver.loadtime.Agent', null)]
+    mojo.javaAgents = [new JavaAgentInfo('org.aspectj', 'aspectjweaver', null, 'org.aspectj.weaver.loadtime.Agent', null)]
     List<String> manifestLines
     try (FileSystem targetJarFS = fsTool.getTargetJarFS(false)) {
       mojo.addLauncherAgentToManifest(targetJarFS, 'org.aspectj.weaver.loadtime.Agent')
@@ -93,7 +93,7 @@ class AgentEmbedderMojoTest extends Specification {
     !targetFSInfo.find { it.path.toString() == '/org/aspectj/weaver/loadtime/Agent.class' }
 
     when:
-    mojo.javaAgents = [new JavaAgent('org.aspectj', 'aspectjweaver', null, 'org.aspectj.weaver.loadtime.Agent', null)]
+    mojo.javaAgents = [new JavaAgentInfo('org.aspectj', 'aspectjweaver', null, 'org.aspectj.weaver.loadtime.Agent', null)]
     DefaultArtifact javaAgentArtifact = Spy(new DefaultArtifact('org.aspectj', 'aspectjweaver', '1.9.21', 'compile', 'jar', null, Mock(ArtifactHandler))) {
       // Mock Maven API, i.e. we cannot use Java NIO
       getFile() >> new File(fsTool.agentJarLocation)

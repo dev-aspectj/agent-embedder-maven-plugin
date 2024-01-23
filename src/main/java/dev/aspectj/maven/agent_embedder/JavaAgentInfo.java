@@ -4,7 +4,7 @@ import org.apache.maven.artifact.Artifact;
 
 import java.util.Objects;
 
-public class JavaAgent {
+public class JavaAgentInfo {
   private String groupId;
   private String artifactId;
   private String classifier;
@@ -12,9 +12,9 @@ public class JavaAgent {
   private String agentPath;
 
   @SuppressWarnings("unused")
-  public JavaAgent() {}
+  public JavaAgentInfo() {}
 
-  public JavaAgent(String groupId, String artifactId, String classifier, String agentClass, String agentPath) {
+  public JavaAgentInfo(String groupId, String artifactId, String classifier, String agentClass, String agentPath) {
     this.groupId = groupId;
     this.artifactId = artifactId;
     this.classifier = classifier;
@@ -63,8 +63,8 @@ public class JavaAgent {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof JavaAgent)) return false;
-    JavaAgent javaAgent = (JavaAgent) o;
+    if (!(o instanceof JavaAgentInfo)) return false;
+    JavaAgentInfo javaAgent = (JavaAgentInfo) o;
     return Objects.equals(groupId, javaAgent.groupId) && Objects.equals(artifactId, javaAgent.artifactId) && Objects.equals(classifier, javaAgent.classifier) && Objects.equals(agentClass, javaAgent.agentClass) && Objects.equals(agentPath, javaAgent.agentPath);
   }
 
@@ -75,7 +75,7 @@ public class JavaAgent {
 
   @Override
   public String toString() {
-    return "JavaAgent(" +
+    return "JavaAgentInfo(" +
       "groupId=" + groupId +
       ", artifactId=" + artifactId +
       ", classifier=" + classifier +

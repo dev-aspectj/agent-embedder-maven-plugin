@@ -9,17 +9,17 @@ import spock.lang.Specification
 import static pl.pojo.tester.api.assertion.Assertions.assertPojoMethodsFor
 import static pl.pojo.tester.api.assertion.Method.*
 
-class JavaAgentTest extends Specification {
+class JavaAgentInfoTest extends Specification {
   @Shared
   final ArtifactHandler artifactHandler = Mock()
 
   def 'JavaAgent matches Artifact for identical groupId, artifactId, classifier, type'(String scope, String version) {
     given:
-    JavaAgent javaAgent = createJavaAgent()
+    JavaAgentInfo agentInfo = createJavaAgentInfo()
     Artifact artifact = new DefaultArtifact('dev.aspectj', 'my-artifact', version, scope, 'jar', 'my-classifier', artifactHandler)
 
     expect:
-    javaAgent.matchesArtifact(artifact)
+    agentInfo.matchesArtifact(artifact)
 
     where:
     [scope, version] << [
@@ -30,11 +30,11 @@ class JavaAgentTest extends Specification {
 
   def 'JavaAgent does not match non-jar Artifact'() {
     given:
-    JavaAgent javaAgent = createJavaAgent()
+    JavaAgentInfo agentInfo = createJavaAgentInfo()
     Artifact artifact = new DefaultArtifact('dev.aspectj', 'my-artifact', '1.2.3', 'compile', type, 'my-classifier', artifactHandler)
 
     expect:
-    !javaAgent.matchesArtifact(artifact)
+    !agentInfo.matchesArtifact(artifact)
 
     where:
     type << ['war', 'zip', 'ear']
@@ -42,11 +42,11 @@ class JavaAgentTest extends Specification {
 
   def 'JavaAgent does not match Artifact if groupId, artifactId, classifier are different'() {
     given:
-    JavaAgent javaAgent = createJavaAgent()
+    JavaAgentInfo agentInfo = createJavaAgentInfo()
     Artifact artifact = new DefaultArtifact(groupId, artifactId, '1.2.3', 'compile', 'jar', classifier, artifactHandler)
 
     expect:
-    !javaAgent.matchesArtifact(artifact)
+    !agentInfo.matchesArtifact(artifact)
 
     where:
     groupId       | artifactId       | classifier
@@ -57,15 +57,15 @@ class JavaAgentTest extends Specification {
 
   def 'Maven needs default constructor for JavaAgent'() {
     expect:
-    new JavaAgent()
+    new JavaAgentInfo()
   }
 
   def 'JavaAgent.toString returns the expected value'() {
     given:
-    JavaAgent javaAgent = createJavaAgent()
+    JavaAgentInfo agentInfo = createJavaAgentInfo()
 
     expect:
-    javaAgent.toString() == 'JavaAgent(' +
+    agentInfo.toString() == 'JavaAgentInfo(' +
       'groupId=dev.aspectj, artifactId=my-artifact, classifier=my-classifier, ' +
       'agentClass=dev.aspectj.MyAgent, agentPath=/home/me/agent.jar' +
       ')'
@@ -73,20 +73,20 @@ class JavaAgentTest extends Specification {
 
   def 'JavaAgent type is always jar'() {
     given:
-    JavaAgent javaAgent = createJavaAgent()
+    JavaAgentInfo agentInfo = createJavaAgentInfo()
 
     expect:
-    javaAgent.type == 'jar'
+    agentInfo.type == 'jar'
   }
 
   def 'check POJO methods'() {
     expect:
-    assertPojoMethodsFor(JavaAgent)
+    assertPojoMethodsFor(JavaAgentInfo)
       .testing(CONSTRUCTOR, GETTER, /*SETTER,*/ EQUALS, HASH_CODE, TO_STRING)
       .areWellImplemented()
   }
 
-  private static JavaAgent createJavaAgent() {
-    return new JavaAgent('dev.aspectj', 'my-artifact', 'my-classifier', 'dev.aspectj.MyAgent', '/home/me/agent.jar')
+  private static JavaAgentInfo createJavaAgentInfo() {
+    return new JavaAgentInfo('dev.aspectj', 'my-artifact', 'my-classifier', 'dev.aspectj.MyAgent', '/home/me/agent.jar')
   }
 }
