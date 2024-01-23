@@ -5,15 +5,14 @@ import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import groovy.transform.builder.Builder
 import groovy.transform.builder.SimpleStrategy
-import spock.util.environment.Jvm
 
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.zip.ZipOutputStream
 
 import static dev.aspectj.maven.agent_embedder.AgentEmbedderMojo.MANIFEST_PATH
+import static dev.aspectj.maven.tools.ZipFileSystemTool.getZipFS
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
 @Builder(
@@ -52,7 +51,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
   private FileSystem hostFS
 
   FileSystem createHostFS() {
-    hostFS = USE_JIMFS ? Jimfs.newFileSystem(JIMFS_CONFIG) : MemoryFileSystemBuilder.newEmpty().build()
+    hostFS = createEmptyFS()
     if (doCreateAgentJar)
       createAgentJar(hostFS)
     createTargetJar(hostFS)
@@ -64,6 +63,10 @@ class InMemoryFileSystemTool implements AutoCloseable {
     if (debug)
       dumpFS(hostFS, 'host')
     hostFS
+  }
+
+  FileSystem createEmptyFS() {
+    return USE_JIMFS ? Jimfs.newFileSystem(JIMFS_CONFIG) : MemoryFileSystemBuilder.newEmpty().build()
   }
 
   void createAgentJar(FileSystem fileSystem) {
@@ -79,7 +82,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
   }
 
   void createJar(FileSystem fileSystem, String location, String layoutDescriptor, String manifest, String debugLabel) {
-    try (FileSystem jarFS = getJarFS(fileSystem, location, true)) {
+    try (FileSystem jarFS = getZipFS(fileSystem.getPath(location), true)) {
       populateFS(jarFS, layoutDescriptor)
       if (manifest) {
         // In populateFS, a default one-line manifest is created, if MANIFEST_PATH is found in the JAR layout
@@ -93,11 +96,11 @@ class InMemoryFileSystemTool implements AutoCloseable {
   }
 
   FileSystem getAgentJarFS(boolean create) {
-    getJarFS(hostFS, agentJarLocation, create)
+    getZipFS(hostFS.getPath(agentJarLocation), create)
   }
 
   FileSystem getTargetJarFS(boolean create) {
-    getJarFS(hostFS, targetJarLocation, create)
+    getZipFS(hostFS.getPath(targetJarLocation), create)
   }
 
   FileSystem getNestedAgentJarFS(boolean create) {
@@ -105,23 +108,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
     // ClosedFileSystemException. I.e., we have a FS leak here. But as soon as the root FS is closed, all subordinate
     // ones will be closed, too.
     FileSystem targetJarFS = getTargetJarFS(false)
-    getJarFS(targetJarFS, nestedAgentJarLocation, create)
-  }
-
-  static FileSystem getJarFS(FileSystem hostFS, String location, boolean create) {
-    Path jarPath = hostFS.getPath(location)
-    if (!create && !Files.exists(jarPath))
-      return null
-    Files.createDirectories(jarPath.parent)
-
-    // Java 13+ has a new constructor capable of creating a zip FS from a path in 'create' mode
-    if (Jvm.current.java13Compatible)
-      return FileSystems.newFileSystem(jarPath, [create: 'true'])
-
-    // Older Java versions can only open a zip FS from a path, if the zip archive exists already.
-    // Therefore, create an empty zip archive first.
-    new ZipOutputStream(Files.newOutputStream(jarPath)).close()
-    return FileSystems.newFileSystem(jarPath, null as ClassLoader)
+    getZipFS(targetJarFS.getPath(nestedAgentJarLocation), create)
   }
 
   static void populateFS(FileSystem fileSystem, String layoutDescriptor) {

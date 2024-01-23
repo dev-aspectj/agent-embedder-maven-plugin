@@ -6,13 +6,11 @@ import com.google.common.jimfs.Jimfs
 import spock.lang.Issue
 import spock.lang.Specification
 import spock.lang.Unroll
-import spock.util.environment.Jvm
 
-import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Files
-import java.nio.file.Path
-import java.util.zip.ZipOutputStream
+
+import static dev.aspectj.maven.tools.ZipFileSystemTool.getZipFS
 
 /**
  * Creates nested ZIP/JAR files in three scenarios:
@@ -39,19 +37,19 @@ class NestedZipTest extends Specification {
     def outerZipPath = targetFS.getPath('outer.zip', [] as String[])
     if (Files.exists(outerZipPath))
       Files.delete(outerZipPath)
-    def outerZipFS = createZipFS(outerZipPath)
+    def outerZipFS = getZipFS(outerZipPath, true)
     Files.write(outerZipFS.getPath('outer.txt'), 'Hello outer!'.bytes)
     Files.copy(rootTxtPath, outerZipFS.getPath('from-root.txt', [] as String[]))
 
     and: 'creating a zip FS inside the outer zip file, creating text file and copying one from the source FS'
     def innerZipPath = outerZipFS.getPath('inner.zip')
-    def innerZipFS = createZipFS(innerZipPath)
+    def innerZipFS = getZipFS(innerZipPath, true)
     Files.write(innerZipFS.getPath('inner.txt', [] as String[]), 'Hello inner!'.bytes)
     Files.copy(rootTxtPath, innerZipFS.getPath('from-root.txt', [] as String[]))
 
     and: 'creating a zip FS inside the inner zip file, creating text file and copying one from the source FS'
     def inner2ZipPath = innerZipFS.getPath('inner2.zip', [] as String[])
-    def inner2ZipFS = createZipFS(inner2ZipPath)
+    def inner2ZipFS = getZipFS(inner2ZipPath, true)
     Files.write(inner2ZipFS.getPath('inner2.txt', [] as String[]), 'Hello inner2!'.bytes)
     Files.copy(rootTxtPath, inner2ZipFS.getPath('from-root.txt', [] as String[]))
 
@@ -66,22 +64,13 @@ class NestedZipTest extends Specification {
       Files.delete(outerZipPath)
     if (rootTxtPath && Files.exists(rootTxtPath))
       Files.delete(rootTxtPath)
+    if (targetFS != FileSystems.default)
+      targetFS?.close()
 
     where:
     scenario           | targetFS
     'on disk'          | FileSystems.default
     'JimFS'            | Jimfs.newFileSystem(Configuration.unix().toBuilder().setWorkingDirectory('/').build())
     'MemoryFileSystem' | MemoryFileSystemBuilder.newEmpty().build()
-  }
-
-  FileSystem createZipFS(Path zipPath) {
-    // Java 13+ has a new constructor capable of creating a zip FS from a path in 'create' mode
-    if (Jvm.current.java13Compatible)
-      return FileSystems.newFileSystem(zipPath, [create: 'true'])
-
-    // Older Java versions can only open a zip FS from a path, if the zip archive exists already.
-    // Therefore, create an empty zip archive first.
-    new ZipOutputStream(Files.newOutputStream(zipPath)).close()
-    return FileSystems.newFileSystem(zipPath, null as ClassLoader)
   }
 }

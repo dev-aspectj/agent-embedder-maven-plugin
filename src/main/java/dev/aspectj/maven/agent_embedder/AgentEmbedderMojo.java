@@ -1,5 +1,6 @@
 package dev.aspectj.maven.agent_embedder;
 
+import dev.aspectj.maven.tools.ZipFileSystemTool;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -11,12 +12,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
+
+import static dev.aspectj.maven.tools.ZipFileSystemTool.getZipFS;
 
 /**
  * Embeds one or more java agents into the module's main artifact
@@ -78,8 +84,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
       String artifactJarLocation = adjustPathSeparatorToHostFS(project.getArtifact().getFile().getPath(), hostFS);
       Path artifactPath = hostFS.getPath(artifactJarLocation);
 
-      //noinspection RedundantCast: newFileSystem is overloaded in more recent JDKs
-      try (FileSystem jarFS = FileSystems.newFileSystem(artifactPath, (ClassLoader) null)) {
+      try (FileSystem jarFS = ZipFileSystemTool.getZipFS(artifactPath, false)) {
         addLauncherAgentToManifest(jarFS, agent.getAgentClass());
         unpackAgentJar(jarFS, agentJarLocation);
       }
@@ -126,6 +131,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
     String manifestLauncherAgentEntry = MANIFEST_HEADER_LAUNCHER_AGENT + ": " + agentClass;
     getLog().debug("Setting manifest attribute '" + manifestLauncherAgentEntry + "'");
     mainAttributes.put(new Attributes.Name(MANIFEST_HEADER_LAUNCHER_AGENT), agentClass);
+    Files.delete(manifestPath);
     try (OutputStream manifestOut = Files.newOutputStream(manifestPath)) {
       manifest.write(manifestOut);
     }
@@ -156,7 +162,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
     Objects.requireNonNull(agentJarPath, "Java agent JAR not found");
 
     //noinspection RedundantCast: newFileSystem is overloaded in more recent JDKs
-    try (FileSystem javaAgentFS = FileSystems.newFileSystem(agentJarPath, (ClassLoader) null)) {
+    try (FileSystem javaAgentFS = getZipFS(agentJarPath, false)) {
       try (
         Stream<Path> files = Files.find(
           javaAgentFS.getPath("/"), Integer.MAX_VALUE,
