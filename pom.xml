@@ -196,6 +196,7 @@
                 <goal>verify</goal>
               </goals>
               <settingsFile>src/it/settings.xml</settingsFile>
+              <showErrors>true</showErrors>
             </configuration>
           </plugin>
         </plugins>
