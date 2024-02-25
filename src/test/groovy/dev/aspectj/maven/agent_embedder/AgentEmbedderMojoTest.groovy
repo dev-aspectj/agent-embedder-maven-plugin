@@ -1,6 +1,5 @@
 package dev.aspectj.maven.agent_embedder
 
-
 import org.apache.maven.artifact.DefaultArtifact
 import org.apache.maven.artifact.handler.ArtifactHandler
 import org.apache.maven.plugin.logging.Log
@@ -10,6 +9,9 @@ import spock.lang.Unroll
 
 import java.nio.file.FileSystem
 import java.nio.file.Files
+import java.util.jar.Manifest
+
+import static dev.aspectj.maven.agent_embedder.JavaAgentLauncher.AGENT_ATTRIBUTES_GROUP
 
 class AgentEmbedderMojoTest extends Specification {
   Log log = Mock()
@@ -42,23 +44,27 @@ class AgentEmbedderMojoTest extends Specification {
       new JavaAgentInfo('org.aspectj', 'aspectjweaver', null, 'org.aspectj.weaver.loadtime.Agent', null, null),
       new JavaAgentInfo('org.acme', 'my-agent', null, 'org.acme.MyAgent', 'arg1=one,arg2=two', null)
     ]
-    List<String> manifestLines
+    Manifest updatedManifest = new Manifest()
     try (FileSystem targetJarFS = fsTool.getTargetJarFS(false)) {
       new AgentEmbedderMojo.ManifestUpdater(mojo, targetJarFS).update()
       mojo.embedLauncherAgent(targetJarFS)
-      manifestLines = Files.lines(targetJarFS.getPath('META-INF/MANIFEST.MF')).toList()
+      updatedManifest.read(Files.newInputStream(targetJarFS.getPath('META-INF/MANIFEST.MF')))
     }
+    def mainAttributes = updatedManifest.mainAttributes
+    def agentAttributes = updatedManifest.getAttributes(AGENT_ATTRIBUTES_GROUP)
+
+    and:
     // Refresh meta data after FS operation
     targetFSInfo = fsTool.targetFSInfo
 
     then:
-    manifestLines.find { it == 'Launcher-Agent-Class: dev.aspectj.maven.agent_embedder.JavaAgentLauncher' }
+    mainAttributes.getValue('Launcher-Agent-Class') == 'dev.aspectj.maven.agent_embedder.JavaAgentLauncher'
     1 * log.debug('Setting manifest attribute \'Launcher-Agent-Class: dev.aspectj.maven.agent_embedder.JavaAgentLauncher\'')
-    manifestLines.find { it == 'Agent-Count: 2' }
-    manifestLines.find { it == 'Agent-Class-1: org.aspectj.weaver.loadtime.Agent' }
-    !manifestLines.find { it.startsWith('Agent-Args-1:') }
-    manifestLines.find { it == 'Agent-Class-2: org.acme.MyAgent' }
-    manifestLines.find { it == 'Agent-Args-2: arg1=one,arg2=two' }
+    agentAttributes.getValue('Agent-Count') == '2'
+    agentAttributes.getValue('Agent-Class-1') == 'org.aspectj.weaver.loadtime.Agent'
+    !agentAttributes.getValue('Agent-Args-1')
+    agentAttributes.getValue('Agent-Class-2') == 'org.acme.MyAgent'
+    agentAttributes.getValue('Agent-Args-2') == 'arg1=one,arg2=two'
 
     and:
     !targetFSInfo.find { it.path.toString() == '/org/aspectj/weaver/loadtime/Agent.class' }
@@ -86,9 +92,9 @@ class AgentEmbedderMojoTest extends Specification {
     where:
     scenario                           | doCreateAgentJar | doCreateNestedAgentJar
     'create agent + nested agent JARs' | true             | true
-    'create agent JARs only'            | true             | false
-    'create nested agent JARs only'     | false            | true
-//    'create no agent JARs'              | false            | false
+    'create agent JARs only'           | true             | false
+    'create nested agent JARs only'    | false            | true
+//    'create no agent JARs'             | false            | false
   }
 
   @Unroll('#scenario')
@@ -137,22 +143,25 @@ class AgentEmbedderMojoTest extends Specification {
     }
     mojo.execute()
 
+    Manifest updatedManifest = new Manifest()
+    try (FileSystem targetJarFS = fsTool.getTargetJarFS(false)) {
+      updatedManifest.read(Files.newInputStream(targetJarFS.getPath('META-INF/MANIFEST.MF')))
+    }
+    def mainAttributes = updatedManifest.mainAttributes
+    def agentAttributes = updatedManifest.getAttributes(AGENT_ATTRIBUTES_GROUP)
+
+    and:
     // Refresh meta data after FS operation
     targetFSInfo = fsTool.targetFSInfo
 
-    List<String> manifestLines
-    try (FileSystem targetJarFS = fsTool.getTargetJarFS(false)) {
-      manifestLines = Files.lines(targetJarFS.getPath('META-INF/MANIFEST.MF')).toList()
-    }
-
     then:
-    manifestLines.find { it == 'Launcher-Agent-Class: dev.aspectj.maven.agent_embedder.JavaAgentLauncher' }
+    mainAttributes.getValue('Launcher-Agent-Class') == 'dev.aspectj.maven.agent_embedder.JavaAgentLauncher'
     1 * log.debug('Setting manifest attribute \'Launcher-Agent-Class: dev.aspectj.maven.agent_embedder.JavaAgentLauncher\'')
-    manifestLines.find { it == 'Agent-Count: 2' }
-    manifestLines.find { it == 'Agent-Class-1: org.aspectj.weaver.loadtime.Agent' }
-    !manifestLines.find { it.startsWith('Agent-Args-1:') }
-    manifestLines.find { it == 'Agent-Class-2: org.acme.MyAgent' }
-    manifestLines.find { it == 'Agent-Args-2: arg1=one,arg2=two' }
+    agentAttributes.getValue('Agent-Count') == '2'
+    agentAttributes.getValue('Agent-Class-1') == 'org.aspectj.weaver.loadtime.Agent'
+    !agentAttributes.getValue('Agent-Args-1')
+    agentAttributes.getValue('Agent-Class-2') == 'org.acme.MyAgent'
+    agentAttributes.getValue('Agent-Args-2') == 'arg1=one,arg2=two'
 
     and:
     targetFSInfo.find { it.path.toString() == '/org/aspectj/weaver/loadtime/Agent.class' }
@@ -168,9 +177,9 @@ class AgentEmbedderMojoTest extends Specification {
     where:
     scenario                           | doCreateAgentJar | doCreateNestedAgentJar
     'create agent + nested agent JARs' | true             | true
-    'create agent JARs only'            | true             | false
-    'create nested agent JARs only'     | false            | true
-//    'create no agent JARs'              | false            | false
+    'create agent JARs only'           | true             | false
+    'create nested agent JARs only'    | false            | true
+//    'create no agent JARs'             | false            | false
   }
 
   @Unroll('#scenario')
