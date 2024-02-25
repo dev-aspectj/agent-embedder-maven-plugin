@@ -91,6 +91,7 @@ META-INF/maven/dev.aspectj/dummy/pom.properties
 BOOT-INF/lib/
 # This is configurable, hence not included by default
 # BOOT-INF/lib/aspectjweaver-1.9.21.jar
+# BOOT-INF/lib/my-agent-3.5.jar
 BOOT-INF/lib/spring-boot-2.7.18.jar
 BOOT-INF/lib/spring-core-5.3.31.jar
 BOOT-INF/lib/spring-jcl-5.3.31.jar

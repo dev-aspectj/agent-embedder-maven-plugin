@@ -67,7 +67,7 @@ class JavaAgentInfoTest extends Specification {
     expect:
     agentInfo.toString() == 'JavaAgentInfo(' +
       'groupId=dev.aspectj, artifactId=my-artifact, classifier=my-classifier, ' +
-      'agentClass=dev.aspectj.MyAgent, agentPath=/home/me/agent.jar' +
+      'agentClass=dev.aspectj.MyAgent, agentArgs=my-args, agentPath=/home/me/agent.jar' +
       ')'
   }
 
@@ -87,6 +87,6 @@ class JavaAgentInfoTest extends Specification {
   }
 
   private static JavaAgentInfo createJavaAgentInfo() {
-    return new JavaAgentInfo('dev.aspectj', 'my-artifact', 'my-classifier', 'dev.aspectj.MyAgent', '/home/me/agent.jar')
+    return new JavaAgentInfo('dev.aspectj', 'my-artifact', 'my-classifier', 'dev.aspectj.MyAgent', 'my-args', '/home/me/agent.jar')
   }
 }

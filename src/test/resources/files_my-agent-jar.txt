@@ -1,0 +1,5 @@
+META-INF/
+META-INF/MANIFEST.MF
+org/
+org/acme/
+org/acme/MyAgent.class

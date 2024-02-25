@@ -9,16 +9,18 @@ public class JavaAgentInfo {
   private String artifactId;
   private String classifier;
   private String agentClass;
+  private String agentArgs;
   private String agentPath;
 
   @SuppressWarnings("unused")
   public JavaAgentInfo() {}
 
-  public JavaAgentInfo(String groupId, String artifactId, String classifier, String agentClass, String agentPath) {
+  public JavaAgentInfo(String groupId, String artifactId, String classifier, String agentClass, String agentArgs, String agentPath) {
     this.groupId = groupId;
     this.artifactId = artifactId;
     this.classifier = classifier;
     this.agentClass = agentClass;
+    this.agentArgs = agentArgs;
     this.agentPath = agentPath;
   }
 
@@ -42,6 +44,10 @@ public class JavaAgentInfo {
     return agentClass;
   }
 
+  public String getAgentArgs() {
+    return agentArgs;
+  }
+
   public String getAgentPath() {
     return agentPath;
   }
@@ -50,6 +56,7 @@ public class JavaAgentInfo {
    * Checks if the Java agent matches a given Maven artifact
    *
    * @param artifact Maven artifact
+   *
    * @return true, if the two elements match, false otherwise
    */
   public boolean matchesArtifact(Artifact artifact) {
@@ -62,15 +69,22 @@ public class JavaAgentInfo {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof JavaAgentInfo)) return false;
+    if (this == o)
+      return true;
+    if (!(o instanceof JavaAgentInfo))
+      return false;
     JavaAgentInfo javaAgent = (JavaAgentInfo) o;
-    return Objects.equals(groupId, javaAgent.groupId) && Objects.equals(artifactId, javaAgent.artifactId) && Objects.equals(classifier, javaAgent.classifier) && Objects.equals(agentClass, javaAgent.agentClass) && Objects.equals(agentPath, javaAgent.agentPath);
+    return Objects.equals(groupId, javaAgent.groupId) &&
+      Objects.equals(artifactId, javaAgent.artifactId) &&
+      Objects.equals(classifier, javaAgent.classifier) &&
+      Objects.equals(agentClass, javaAgent.agentClass) &&
+      Objects.equals(agentArgs, javaAgent.agentArgs) &&
+      Objects.equals(agentPath, javaAgent.agentPath);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(groupId, artifactId, classifier, agentClass, agentPath);
+    return Objects.hash(groupId, artifactId, classifier, agentClass, agentArgs, agentPath);
   }
 
   @Override
@@ -80,6 +94,7 @@ public class JavaAgentInfo {
       ", artifactId=" + artifactId +
       ", classifier=" + classifier +
       ", agentClass=" + agentClass +
+      ", agentArgs=" + agentArgs +
       ", agentPath=" + agentPath +
       ')';
   }
