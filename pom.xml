@@ -195,6 +195,9 @@
                 <goal>clean</goal>
                 <goal>verify</goal>
               </goals>
+              <setupIncludes>
+                <setupInclude>RemoveFinalAgent/pom.xml</setupInclude>
+              </setupIncludes>
               <settingsFile>src/it/settings.xml</settingsFile>
               <showErrors>true</showErrors>
             </configuration>
