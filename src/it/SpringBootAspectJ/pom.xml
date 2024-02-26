@@ -17,6 +17,7 @@
   <properties>
     <java.version>8</java.version>
     <aspectj.version>1.9.21</aspectj.version>
+    <remove-final.version>1</remove-final.version>
   </properties>
 
   <build>
@@ -43,6 +44,12 @@
                   <groupId>org.aspectj</groupId>
                   <artifactId>aspectjweaver</artifactId>
                   <agentClass>org.aspectj.weaver.loadtime.Agent</agentClass>
+                </agent>
+                <agent>
+                  <groupId>dev.aspectj</groupId>
+                  <artifactId>remove-final-agent</artifactId>
+                  <agentClass>dev.aspectj.agent.RemoveFinalAgent</agentClass>
+                  <agentArgs>dev.aspectj.FirstComponent,dev.aspectj.SecondComponent</agentArgs>
                 </agent>
               </javaAgents>
               <removeEmbeddedAgents>true</removeEmbeddedAgents>
@@ -83,6 +90,12 @@
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
       <version>${aspectj.version}</version>
+    </dependency>
+    <!-- Agent removing final modifiers from classes and methods -->
+    <dependency>
+      <groupId>dev.aspectj</groupId>
+      <artifactId>remove-final-agent</artifactId>
+      <version>${remove-final.version}</version>
     </dependency>
     <!-- Using these instead of spring-boot-starter makes the repackaged JAR smaller -->
     <dependency>
