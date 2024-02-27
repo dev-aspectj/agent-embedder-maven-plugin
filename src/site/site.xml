@@ -1,0 +1,27 @@
+<project xmlns="http://maven.apache.org/DECORATION/1.8.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 http://maven.apache.org/xsd/decoration-1.8.0.xsd">
+
+  <publishDate format="yyyy-MM-dd" position="none"/>
+  <version position="right"/>
+
+  <edit>${project.scm.url}</edit>
+
+  <body>
+    <!-- This adds more tags, but does not overwrite any existing ones -->
+    <breadcrumbs>
+      <item name="${this.name}" href="./index.html"/>
+    </breadcrumbs>
+    <menu name="Overview">
+      <item name="Introduction" href="./index.html"/>
+      <item name="Usage" href="./usage.html"/>
+      <item name="Goals" href="./plugin-info.html"/>
+    </menu>
+    <!--
+    <menu name="Other">
+      <item name="Sitemap" href="./sitemap.html"/>
+    </menu>
+    -->
+    <menu ref="reports"/>
+  </body>
+
+</project>
