@@ -193,8 +193,12 @@ public class AgentEmbedderMojo extends AbstractMojo {
 
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
   protected MavenProject project;
+
+  @SuppressWarnings("unused")  // Keep for future use
   @Parameter(defaultValue = "${session}", readonly = true, required = true)
   protected MavenSession session;
+
+  @SuppressWarnings("unused")  // Keep for future use
   @Component
   protected MavenProjectHelper projectHelper;
 
