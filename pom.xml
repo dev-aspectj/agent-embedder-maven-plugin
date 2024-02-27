@@ -199,6 +199,8 @@
                 <setupInclude>RemoveFinalAgent/pom.xml</setupInclude>
               </setupIncludes>
               <settingsFile>src/it/settings.xml</settingsFile>
+              <!-- Activate to debug ITs -->
+              <debug>false</debug>
               <showErrors>true</showErrors>
             </configuration>
           </plugin>
