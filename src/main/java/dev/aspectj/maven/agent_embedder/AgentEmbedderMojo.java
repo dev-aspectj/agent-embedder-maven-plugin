@@ -20,6 +20,67 @@ import static dev.aspectj.maven.tools.ZipFileSystemTool.getZipFS;
 
 /**
  * Embeds one or more java agents into the module's main artifact
+ * <p>
+ * Use this goal, if (and only if) you have an <b>executable JAR</b> (with a {@code Main-Class} attribute in its
+ * manifest) and wish to <b>run a java agent automatically</b> when running the JAR with {@code java -jar my.jar} on
+ * <b>JRE 9+</b>.
+ * <p>
+ * Normally, you would need an additional {@code -javaagent:/path/to/agent.jar} JVM argument, but since Java 9 there is
+ * the <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/instrument/package-summary.html">
+ * {@code Launcher-Agent-Class} mechanism</a>. I.e., even though this plugin works just fine on Java 8, you do need to
+ * launch the modified executable JAR on JRE 9+ to enjoy the benefits of this JVM feature.
+ * <p>
+ * The {@link #javaAgents} specified for this goal will be unpacked from their JARs and embedded into the main
+ * artifact's root directory to make them visible to the java agent classloader during runtime. JVM classloaders cannot
+ * load agents from nested JARs.
+ * <p>
+ * The main artifact is expected to exist already when executing this goal. Typically, the Maven module already uses
+ * another plugin creating a build artifact during the {@code package} phase, which is why this goal by default also
+ * runs in the same phase. Make sure to configure this plugin to run <i>after</i> the plugin creating the main artifact,
+ * so you have something for it to operate on. This can be done most easily by simply listing both plugins in the POM
+ * file in the desired chronological execution order, if they are to run in the same phase. Another option would be to
+ * let them run in different phases, making sure that this plugin runs later than the one creating the artifact. We
+ * recommend to stick to convention over configuration and use the {@code package} phase. For example:
+ * <pre>{@code
+ * <!-- Create executable Spring Boot fat JAR -->
+ * <plugin>
+ *   <groupId>org.springframework.boot</groupId>
+ *   <artifactId>spring-boot-maven-plugin</artifactId>
+ * </plugin>
+ * <!-- Embed Java agent(s) for automatic execution -->
+ * <plugin>
+ *   <groupId>dev.aspectj</groupId>
+ *   <artifactId>agent-embedder-maven-plugin</artifactId>
+ *   <executions>
+ *     <execution>
+ *       <id>embed-agents</id>
+ *       <goals>
+ *         <goal>embed</goal>
+ *       </goals>
+ *       <configuration>
+ *         <javaAgents>
+ *           <!-- ... -->
+ *         </javaAgents>
+ *         <removeEmbeddedAgents>true</removeEmbeddedAgents>
+ *       </configuration>
+ *     </execution>
+ *   </executions>
+ * </plugin>
+ * }</pre>
+ * <p>
+ * Unique features not offered by the Java 9+ {@code Launcher-Agent-Class} mechanism:
+ * <ul>
+ *   <li>
+ *     Via {@code Launcher-Agent-Class}, the JVM only supports a single agent for auto-start, not multiple ones.
+ *     Multiple agents can only be specified on the JVM command line. But this plugin installs its own launcher agent,
+ *     which in turn is capable of starting <b>multiple java agents</b>.
+ *   </li>
+ *   <li>
+ *     {@code Launcher-Agent-Class} also does not support <b>agent option strings</b> like the JVM command line does.
+ *     This plugin, however, does support agent arguments via its launcher agent. See the {@link #javaAgents} section
+ *     for more details.
+ *   </li>
+ * </ul>
  */
 @Mojo(
   name = "embed",
@@ -38,18 +99,94 @@ public class AgentEmbedderMojo extends AbstractMojo {
 
   /**
    * Java agents to embed into the main artifact
+   * <p>
+   * Class {@link JavaAgentInfo} describes the properties available for describing artifacts. The following properties
+   * are available:
+   * <ul>
+   *   <li>
+   *     {@code groupId}, {@code artifactId}, {@code classifier}: A java agent's Maven coordinates (without
+   *     {@code version}), which are used to match a dependency declared for the module executing the plugin. If for any
+   *     reason declaring the agent JAR a dependency is not an option, which should rarely be the case, see
+   *     {@code agentPath} for a possible workaround.
+   *   </li>
+   *   <li>
+   *     {@code agentClass}: The agent class containing its {@code premain} method. A future version of this plugin
+   *     might be able to read the value directly from the agent's manifest, but currently you need to specify it
+   *     explicitly. Just inspect the agent JAR's <i>META-INF/MANIFEST.MF</i> file and copy the fully qualified class
+   *     name from its {@code Premain-Class} attribute.
+   *   </li>
+   *   <li>
+   *     {@code agentArgs}: An optional argument string for the java agent. When using {@code -javaagent} on the JVM
+   *     command line, an argument string is specified after an equals sign, e.g.
+   *     {@code -javaagent:/path/to/agent.jar=option1=one,option2=two}. This simply maps to an {@code agentArgs} value
+   *     of {@code option1=one,option2=two}.
+   *   </li>
+   *   <li>
+   *     {@code agentPath}: Usually, the agent path is inferred from the corresponding dependency described by
+   *     configuration values {@code groupId}, {@code artifactId}, {@code classifier}. This works for regular
+   *     dependencies as well as system-scoped ones. But maybe, you have a special case where e.g. the agent JAR is
+   *     stored in a libraries directory checked into the project's SCM (source code management) system. <i>(Please,
+   *     avoid working like that!)</i> Then, you can specify {@code agentPath} to point there. Another case is that you
+   *     know the path of a nested agent JAR inside the main artifact, e.g. <i>BOOT-INF/lib/agent.jar</i>, and for some
+   *     weird reason the JAR got there without being a dependency. Again, you can specify {@code agentPath} to point
+   *     there. The plugin will find and unpack the JAR from there.
+   *   </li>
+   * </ul>
+   * Here is an example for two agents to be embedded into the executable JAR, one of them also taking an option string:
+   * <pre>{@code
+   * <javaAgents>
+   *   <agent>
+   *     <groupId>org.aspectj</groupId>
+   *     <artifactId>aspectjweaver</artifactId>
+   *     <agentClass>org.aspectj.weaver.loadtime.Agent</agentClass>
+   *   </agent>
+   *   <agent>
+   *     <groupId>dev.aspectj</groupId>
+   *     <artifactId>remove-final-agent</artifactId>
+   *     <agentClass>dev.aspectj.agent.RemoveFinalAgent</agentClass>
+   *     <agentArgs>dev.aspectj.FirstComponent,dev.aspectj.SecondComponent</agentArgs>
+   *   </agent>
+   * </javaAgents>
+   * }</pre>
+   * This is an agent with dummy Maven coordinates and an agent path relative to the module base directory:
+   * <pre>{@code
+   * <javaAgents>
+   *   <agent>
+   *     <groupId>dummy</groupId>
+   *     <artifactId>dummy</artifactId>
+   *     <agentClass>org.acme.MyAgent</agentClass>
+   *     <agentPath>${project.basedir&#125;/lib/agent.jar</agentClass>
+   *   </agent>
+   * </javaAgents>
+   * }</pre>
+   * This is an agent with dummy Maven coordinates and an agent path inside the executable JAR, plus an option string:
+   * <pre>{@code
+   * <javaAgents>
+   *   <agent>
+   *     <groupId>dummy</groupId>
+   *     <artifactId>dummy</artifactId>
+   *     <agentClass>org.acme.MyAgent</agentClass>
+   *     <agentPath>BOOT-INF/lib/agent.jar</agentClass>
+   *     <agentArgs>option1=one,option2=two</agentArgs>
+   *   </agent>
+   * </javaAgents>
+   * }</pre>
    */
   @Parameter(required = true)
   protected List<JavaAgentInfo> javaAgents;
 
   /**
-   * Should agent JARs described by {@code javaAgents}, if found embedded inside the fat JAR, be deleted after expanding
-   * the agent classes into the root directory of the fat JAR?
+   * Remove nested agent JARs from the executable JAR after unpacking their contents into the executable JAR
    * <p>
-   * For example: Spring Boot executable JARs contain all classpath dependencies in folder <i>BOOT-INF/lib</i>, from
-   * where normally they are loaded using a special classloader that can read embedded JARs. Agent JARs defined as
-   * dependencies, e.g. <i>aspectweaver-x.y.z.jar</i>, can also be found there. After having expanded an agent JAR into
-   * the root folder, the classes exist twice in the same JAR, which is not a big problem, but bloats the JAR.
+   * Some executable JARs contain nested dependency JARs. For example, Spring Boot executable JARs contain some or all
+   * of their classpath dependencies in folder <i>BOOT-INF/lib</i>, from where they are loaded using a special
+   * classloader that can read nested JARs. Agent JARs defined as dependencies, e.g. <i>aspectjweaver-x.y.z.jar</i>, can
+   * also be found there, if the user did not exclude them during the build. After having expanded an agent JAR into the
+   * containing JAR's root folder, the classes exist twice in the same JAR - unpacked and as a nested JAR. This is
+   * not necessarily a big problem, but bloats the JAR.
+   * <p>
+   * This option, if active, makes the plugin search for nested JARs matching the names of artifacts described by
+   * {@code javaAgents}. For each agent, the first nested JAR found is deleted.
    */
   @Parameter(required = true, defaultValue = "false")
   protected boolean removeEmbeddedAgents;
@@ -162,6 +299,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
       try (
         Stream<Path> files = Files.find(
           javaAgentFS.getPath("/"), Integer.MAX_VALUE,
+          // Do not overwrite existing files, especially META-INF/MANIFEST.MF
           (path, basicFileAttributes) -> !Files.exists(jarFS.getPath(path.toString()))
         )
       ) {
