@@ -24,34 +24,32 @@ import static dev.aspectj.maven.tools.ZipFileSystemTool.getZipFS
  */
 @Issue('https://github.com/marschall/memoryfilesystem/issues/156')
 class NestedZipTest extends Specification {
-  // TODO: Remove '[] as String[]' workaround from 'getPath()' everywhere, after
-  //       https://issues.apache.org/jira/browse/GROOVY-11293 has been fixed.
   @Unroll('#scenario')
   def 'create nested zip file'() {
     given: 'a text file on the source FS'
     def sourceFS = FileSystems.default
-    def rootTxtPath = sourceFS.getPath('root.txt', [] as String[])
+    def rootTxtPath = sourceFS.getPath('root.txt')
     Files.write(rootTxtPath, 'Hello root!'.bytes)
 
     when: 'creating a zip FS on the target FS, creating text file and copying one from the source FS'
-    def outerZipPath = targetFS.getPath('outer.zip', [] as String[])
+    def outerZipPath = targetFS.getPath('outer.zip')
     if (Files.exists(outerZipPath))
       Files.delete(outerZipPath)
     def outerZipFS = getZipFS(outerZipPath, true)
     Files.write(outerZipFS.getPath('outer.txt'), 'Hello outer!'.bytes)
-    Files.copy(rootTxtPath, outerZipFS.getPath('from-root.txt', [] as String[]))
+    Files.copy(rootTxtPath, outerZipFS.getPath('from-root.txt'))
 
     and: 'creating a zip FS inside the outer zip file, creating text file and copying one from the source FS'
     def innerZipPath = outerZipFS.getPath('inner.zip')
     def innerZipFS = getZipFS(innerZipPath, true)
-    Files.write(innerZipFS.getPath('inner.txt', [] as String[]), 'Hello inner!'.bytes)
-    Files.copy(rootTxtPath, innerZipFS.getPath('from-root.txt', [] as String[]))
+    Files.write(innerZipFS.getPath('inner.txt'), 'Hello inner!'.bytes)
+    Files.copy(rootTxtPath, innerZipFS.getPath('from-root.txt'))
 
     and: 'creating a zip FS inside the inner zip file, creating text file and copying one from the source FS'
-    def inner2ZipPath = innerZipFS.getPath('inner2.zip', [] as String[])
+    def inner2ZipPath = innerZipFS.getPath('inner2.zip')
     def inner2ZipFS = getZipFS(inner2ZipPath, true)
-    Files.write(inner2ZipFS.getPath('inner2.txt', [] as String[]), 'Hello inner2!'.bytes)
-    Files.copy(rootTxtPath, inner2ZipFS.getPath('from-root.txt', [] as String[]))
+    Files.write(inner2ZipFS.getPath('inner2.txt'), 'Hello inner2!'.bytes)
+    Files.copy(rootTxtPath, inner2ZipFS.getPath('from-root.txt'))
 
     then: 'no errors occur'
     noExceptionThrown()

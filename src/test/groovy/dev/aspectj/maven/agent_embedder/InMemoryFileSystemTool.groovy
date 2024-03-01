@@ -110,8 +110,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
       if (manifest) {
         // In populateFS, a default one-line manifest is created, if MANIFEST_PATH is found in the JAR layout
         // descriptor. Therefore, explicitly work in REPLACE_EXISTING mode.
-        // TODO: Remove '[] as String[]' after https://issues.apache.org/jira/browse/GROOVY-11293 fix
-        Files.copy(FileSystems.default.getPath(manifest, [] as String[]), jarFS.getPath(MANIFEST_PATH, [] as String[]), REPLACE_EXISTING)
+        Files.copy(FileSystems.default.getPath(manifest), jarFS.getPath(MANIFEST_PATH), REPLACE_EXISTING)
       }
       if (debug)
         dumpFS(jarFS, debugLabel)
@@ -136,8 +135,7 @@ class InMemoryFileSystemTool implements AutoCloseable {
 
   static void populateFS(FileSystem fileSystem, String layoutDescriptor) {
     final Path manifestPath = fileSystem.getPath(MANIFEST_PATH)
-    // TODO: Remove '[] as String[]' after https://issues.apache.org/jira/browse/GROOVY-11293 fix
-    Files.lines(FileSystems.default.getPath(layoutDescriptor, [] as String[])).forEach { line ->
+    Files.lines(FileSystems.default.getPath(layoutDescriptor)).forEach { line ->
       if (line.startsWith('#'))
         return
       Path path = fileSystem.getPath(line)
