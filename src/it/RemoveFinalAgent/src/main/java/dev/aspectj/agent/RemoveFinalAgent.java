@@ -16,7 +16,7 @@ public class RemoveFinalAgent {
     transform(targetClasses, instrumentation);
   }
 
-  private static void transform(String targetClasses, Instrumentation instrumentation) {
+  static void transform(String targetClasses, Instrumentation instrumentation) {
     //noinspection Convert2Lambda
     instrumentation.addTransformer(
       new ClassFileTransformer() {

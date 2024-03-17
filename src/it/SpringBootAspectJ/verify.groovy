@@ -39,6 +39,12 @@ assert removeEmbeddedJarLines.grep(~/.*BOOT-INF\/lib\/remove-final-agent-.*\.jar
 // Inspect Spring Boot runtime output
 // --------------------------------------------------------
 
+// AspectJ weaver is started via 'Agent-Class' manifest attribute auto-detection
+assert logLines.contains('Starting agent org.aspectj.weaver.loadtime.Agent with arguments null')
+
+// Remove final agent is started via 'agentClass' config property
+assert logLines.contains('Starting agent dev.aspectj.agent.NonManifestRemoveFinalAgent with arguments dev.aspectj.FirstComponent,dev.aspectj.SecondComponent')
+
 // AspectJ load-time weaving (LTW) happens
 List<String> weaveInfoLines = logLines.grep(~/.*weaveinfo.*/)
 assert weaveInfoLines.size() == 4
@@ -47,7 +53,7 @@ assert weaveInfoLines.grep(~/.*field-set\(java.lang.Double dev.aspectj.FirstComp
 assert weaveInfoLines.grep(~/.*field-set\(java.lang.Integer dev.aspectj.SecondComponent.field2\).*/).size() == 1
 assert weaveInfoLines.grep(~/.*field-set\(boolean dev.aspectj.SecondComponent.field3\).*/).size() == 1
 
-// Remove final agent is active
+// Remove final agent does its job, removing 'final' modifiers from specified target classes
 assert logLines.grep(~/.*Remove final agent seems to be inactive.*/).size() == 0
 assert logLines.contains('[Remove Final Agent] Removing final from class dev.aspectj.FirstComponent')
 assert logLines.contains('[Remove Final Agent] Removing final from class dev.aspectj.SecondComponent')

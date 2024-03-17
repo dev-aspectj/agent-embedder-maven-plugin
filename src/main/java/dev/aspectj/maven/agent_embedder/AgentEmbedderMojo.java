@@ -91,6 +91,7 @@ import static dev.aspectj.maven.tools.ZipFileSystemTool.getZipFS;
 )
 public class AgentEmbedderMojo extends AbstractMojo {
   public static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+  public static final String HEADER_AGENT_CLASS = "Agent-Class";
 
   /**
    * Host file system the mojo works on. Override for testing.
@@ -110,10 +111,10 @@ public class AgentEmbedderMojo extends AbstractMojo {
    *     {@code agentPath} for a possible workaround.
    *   </li>
    *   <li>
-   *     {@code agentClass}: The agent class containing its {@code premain} method. A future version of this plugin
-   *     might be able to read the value directly from the agent's manifest, but currently you need to specify it
-   *     explicitly. Just inspect the agent JAR's <i>META-INF/MANIFEST.MF</i> file and copy the fully qualified class
-   *     name from its {@code Premain-Class} attribute.
+   *     {@code agentClass}: The agent class containing a {@code premain} launcher method. This property is optional,
+   *     because by default the plugin extracts the value from the agent JAR's {@code Agent-Class} manifest attribute.
+   *     In the rare occasion that you wish to override the manifest value (e.g., the manifest does not exist or does
+   *     not contain the correct value), set this property.
    *   </li>
    *   <li>
    *     {@code agentArgs}: An optional argument string for the java agent. When using {@code -javaagent} on the JVM
@@ -138,12 +139,12 @@ public class AgentEmbedderMojo extends AbstractMojo {
    *   <agent>
    *     <groupId>org.aspectj</groupId>
    *     <artifactId>aspectjweaver</artifactId>
-   *     <agentClass>org.aspectj.weaver.loadtime.Agent</agentClass>
    *   </agent>
    *   <agent>
    *     <groupId>dev.aspectj</groupId>
    *     <artifactId>remove-final-agent</artifactId>
-   *     <agentClass>dev.aspectj.agent.RemoveFinalAgent</agentClass>
+   *     <!-- Optional parameter, overriding agent manifest value -->
+   *     <agentClass>dev.aspectj.agent.NonManifestRemoveFinalAgent</agentClass>
    *     <agentArgs>dev.aspectj.FirstComponent,dev.aspectj.SecondComponent</agentArgs>
    *   </agent>
    * </javaAgents>
@@ -154,7 +155,6 @@ public class AgentEmbedderMojo extends AbstractMojo {
    *   <agent>
    *     <groupId>dummy</groupId>
    *     <artifactId>dummy</artifactId>
-   *     <agentClass>org.acme.MyAgent</agentClass>
    *     <agentPath>${project.basedir&#125;/lib/agent.jar</agentClass>
    *   </agent>
    * </javaAgents>
@@ -165,7 +165,6 @@ public class AgentEmbedderMojo extends AbstractMojo {
    *   <agent>
    *     <groupId>dummy</groupId>
    *     <artifactId>dummy</artifactId>
-   *     <agentClass>org.acme.MyAgent</agentClass>
    *     <agentPath>BOOT-INF/lib/agent.jar</agentClass>
    *     <agentArgs>option1=one,option2=two</agentArgs>
    *   </agent>
@@ -182,8 +181,8 @@ public class AgentEmbedderMojo extends AbstractMojo {
    * of their classpath dependencies in folder <i>BOOT-INF/lib</i>, from where they are loaded using a special
    * classloader that can read nested JARs. Agent JARs defined as dependencies, e.g. <i>aspectjweaver-x.y.z.jar</i>, can
    * also be found there, if the user did not exclude them during the build. After having expanded an agent JAR into the
-   * containing JAR's root folder, the classes exist twice in the same JAR - unpacked and as a nested JAR. This is
-   * not necessarily a big problem, but bloats the JAR.
+   * containing JAR's root folder, the classes exist twice in the same JAR - unpacked and as a nested JAR. This is not
+   * necessarily a big problem, but bloats the JAR.
    * <p>
    * This option, if active, makes the plugin search for nested JARs matching the names of artifacts described by
    * {@code javaAgents}. For each agent, the first nested JAR found is deleted.
@@ -212,7 +211,6 @@ public class AgentEmbedderMojo extends AbstractMojo {
     try (FileSystem jarFS = getZipFS(artifactPath, false)) {
       if (jarFS == null)
         throw new MojoExecutionException("Cannot open artifact JAR file");
-      new ManifestUpdater(jarFS).update();
       embedLauncherAgent(jarFS);
       getLog().info("Embedding java agents");
       for (JavaAgentInfo agent : javaAgents) {
@@ -225,8 +223,9 @@ public class AgentEmbedderMojo extends AbstractMojo {
         if (agentJarLocation == null)
           throw new MojoExecutionException("Java agent JAR for " + agent + " not found");
         getLog().info("Processing java agent " + agentJarLocation);
-        unpackAgentJar(jarFS, agentJarLocation);
+        unpackAgentJar(agent, jarFS, agentJarLocation);
       }
+      new ManifestUpdater(jarFS).update();
     }
     catch (IOException | NoExecutableJarException e) {
       throw new MojoExecutionException("Error while embedding java agents", e);
@@ -272,7 +271,7 @@ public class AgentEmbedderMojo extends AbstractMojo {
     return path.replace(fromSeparator, toSeparator);
   }
 
-  protected void unpackAgentJar(FileSystem jarFS, String agentPath) throws IOException, MojoExecutionException {
+  protected void unpackAgentJar(JavaAgentInfo agentInfo, FileSystem jarFS, String agentPath) throws IOException, MojoExecutionException {
     Path agentJarPath = hostFS.getPath(agentPath);
     final boolean externalJarFound = Files.exists(agentJarPath);
     Path embeddedAgentJarPath = null;
@@ -300,6 +299,9 @@ public class AgentEmbedderMojo extends AbstractMojo {
 
     //noinspection RedundantCast: newFileSystem is overloaded in more recent JDKs
     try (FileSystem javaAgentFS = getZipFS(agentJarPath, false)) {
+      Objects.requireNonNull(javaAgentFS);
+      configureJavaAgentClass(agentInfo, agentJarPath, javaAgentFS);
+
       try (
         Stream<Path> files = Files.find(
           javaAgentFS.getPath("/"), Integer.MAX_VALUE,
@@ -329,6 +331,49 @@ public class AgentEmbedderMojo extends AbstractMojo {
     if (removeEmbeddedAgents && embeddedAgentJarPath != null && Files.exists(embeddedAgentJarPath)) {
       getLog().info("Removing embedded java agent: " + embeddedAgentJarPath);
       Files.delete(embeddedAgentJarPath);
+    }
+  }
+
+  /**
+   * Determine and configure the java agent class for a given agent.
+   * <p>
+   * By default, read it from the agent info given in the plugin configuration. If unset, try to extract it from the
+   * agent JAR's manifest, reading its {@code Agent-Class} attribute. If neither of the two is specified, throw a
+   * {@link MojoExecutionException}.
+   * <p>
+   * Note: The method does not check if the determined class actually exists in the agent JAR.
+   */
+  protected void configureJavaAgentClass(JavaAgentInfo agentInfo, Path agentJarPath, FileSystem javaAgentFS)
+    throws IOException, MojoExecutionException
+  {
+    getLog().debug("Configuring java agent class for " + agentInfo);
+
+    getLog().debug("Reading agent manifest from path " + agentJarPath);
+    Manifest javaAgentManifest = new Manifest(Files.newInputStream(javaAgentFS.getPath("/" + MANIFEST_PATH)));
+
+    String manifestAgentClass = javaAgentManifest.getMainAttributes().getValue(HEADER_AGENT_CLASS);
+    manifestAgentClass = manifestAgentClass == null ? "" : manifestAgentClass.trim();
+    getLog().debug("Agent class from manifest: " + manifestAgentClass);
+
+    agentInfo.setAgentClass(agentInfo.getAgentClass() == null ? "" : agentInfo.getAgentClass().trim());
+    getLog().debug("Agent class from plugin configuration: " + agentInfo.getAgentClass());
+
+    if (manifestAgentClass.isEmpty()) {
+      if (agentInfo.getAgentClass().isEmpty())
+        throw new MojoExecutionException(
+          "Agent class for " + agentInfo + " neither configured nor found in agent manifest"
+        );
+      getLog().warn(
+        "Agent class name not found in agent manifest, using configured value '" +
+          agentInfo.getAgentClass() + "'. Attention: JAR does not seem to be a regular java agent."
+      );
+    }
+    else if (agentInfo.getAgentClass().isEmpty()) {
+      getLog().debug("Using agent class '" + manifestAgentClass + "' found in manifest");
+      agentInfo.setAgentClass(manifestAgentClass);
+    }
+    else {
+      getLog().debug("Using agent class '" + agentInfo.getAgentClass() + "' found in plugin configuration");
     }
   }
 

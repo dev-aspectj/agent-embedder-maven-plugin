@@ -44,12 +44,14 @@
                 <agent>
                   <groupId>org.aspectj</groupId>
                   <artifactId>aspectjweaver</artifactId>
-                  <agentClass>org.aspectj.weaver.loadtime.Agent</agentClass>
+                  <!-- Optional parameter, let the plugin extract the correct value from the agent manifest -->
+                  <!--<agentClass>org.aspectj.weaver.loadtime.Agent</agentClass>-->
                 </agent>
                 <agent>
                   <groupId>dev.aspectj</groupId>
                   <artifactId>remove-final-agent</artifactId>
-                  <agentClass>dev.aspectj.agent.RemoveFinalAgent</agentClass>
+                  <!-- Optional parameter, overriding agent manifest value -->
+                  <agentClass>dev.aspectj.agent.NonManifestRemoveFinalAgent</agentClass>
                   <agentArgs>dev.aspectj.FirstComponent,dev.aspectj.SecondComponent</agentArgs>
                 </agent>
               </javaAgents>

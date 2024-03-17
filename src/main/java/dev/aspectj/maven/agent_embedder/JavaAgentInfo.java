@@ -2,6 +2,8 @@ package dev.aspectj.maven.agent_embedder;
 
 import org.apache.maven.artifact.Artifact;
 
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
 import java.util.Objects;
 
 public class JavaAgentInfo {
@@ -42,6 +44,17 @@ public class JavaAgentInfo {
 
   public String getAgentClass() {
     return agentClass;
+  }
+
+  /**
+   * In contrast to other agent info properties, the agent class needs to be updateable, because the property is
+   * optional and can be determined by scanning the agent's manifest, extracting its {@code Agent-Class} attribute in
+   * the process. See {@link AgentEmbedderMojo#configureJavaAgentClass(JavaAgentInfo, Path, FileSystem)}.
+   *
+   * @param agentClass java agent main class
+   */
+  public void setAgentClass(String agentClass) {
+    this.agentClass = agentClass;
   }
 
   public String getAgentArgs() {

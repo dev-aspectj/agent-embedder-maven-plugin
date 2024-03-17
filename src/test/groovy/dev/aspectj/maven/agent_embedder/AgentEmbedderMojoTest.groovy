@@ -72,8 +72,8 @@ class AgentEmbedderMojoTest extends Specification {
 
     when:
     try (FileSystem targetJarFS = fsTool.getTargetJarFS(false)) {
-      mojo.unpackAgentJar(targetJarFS, fsTool.agentJarLocation1)
-      mojo.unpackAgentJar(targetJarFS, fsTool.agentJarLocation2)
+      mojo.unpackAgentJar(mojo.javaAgents[0], targetJarFS, fsTool.agentJarLocation1)
+      mojo.unpackAgentJar(mojo.javaAgents[1], targetJarFS, fsTool.agentJarLocation2)
     }
     // Refresh meta data after FS operation
     targetFSInfo = fsTool.targetFSInfo
