@@ -17,7 +17,7 @@
   <properties>
     <java.version>8</java.version>
     <!-- Since 1.9.21.1, AspectJ Weaver no longer needs '-_-add-opens java.base/java.lang=ALL-UNNAMED' -->
-    <aspectj.version>1.9.21.1</aspectj.version>
+    <aspectj.version>1.9.21.2</aspectj.version>
     <remove-final.version>1</remove-final.version>
   </properties>
 
