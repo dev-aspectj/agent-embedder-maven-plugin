@@ -33,7 +33,7 @@
           <ul class="breadcrumb">
       <li class=""><a href="./index.html" title="Agent Embedder Maven Plugin">Agent Embedder Maven Plugin</a><span class="divider">/</span></li>
     <li class="active ">agent-embedder:embed</li>
-      <li id="projectVersion" class="pull-right">Version: 1.0-SNAPSHOT</li>
+      <li id="projectVersion" class="pull-right">Version: 1.0</li>
           </ul>
         </div>
       </header>
@@ -63,7 +63,7 @@
 <section>
 <h2><a name="agent-embedder:embed"></a>agent-embedder:embed</h2><a name="agent-embedder:embed"></a>
 <p><strong>Full name</strong>:</p>
-<p>dev.aspectj:agent-embedder-maven-plugin:1.0-SNAPSHOT:embed</p>
+<p>dev.aspectj:agent-embedder-maven-plugin:1.0:embed</p>
 <p><strong>Description</strong>:</p>
 <p>Embeds one or more java agents into the module's main artifact 
 <p>Use this goal, if (and only if) you have an <b>executable JAR</b> (with a <code>Main-Class</code> attribute in its manifest) and wish to <b>run a java agent automatically</b> when running the JAR with <code>java -jar my.jar</code> on <b>JRE 9+</b>.</p>
@@ -139,14 +139,14 @@
   &lt;/agent&gt;
 &lt;/javaAgents&gt;
 </code></pre> This is an agent with dummy Maven coordinates and an agent path relative to the module base directory: 
-<pre><code>&lt;javaAgents&gt;
+<pre>&lt;javaAgents&gt;
   &lt;agent&gt;
     &lt;groupId&gt;dummy&lt;/groupId&gt;
-    &lt;artifactId&gt;dummy&lt;/artifactId&gt;
+    &lt;artifactId&gt;dummy&lt;/artifactId&gt;}
     &lt;agentPath&gt;${project.basedir}/lib/agent.jar&lt;/agentClass&gt;
   &lt;/agent&gt;
 &lt;/javaAgents&gt;
-</code></pre> This is an agent with dummy Maven coordinates and an agent path inside the executable JAR, plus an option string: 
+</pre> This is an agent with dummy Maven coordinates and an agent path inside the executable JAR, plus an option string: 
 <pre><code>&lt;javaAgents&gt;
   &lt;agent&gt;
     &lt;groupId&gt;dummy&lt;/groupId&gt;
@@ -187,14 +187,14 @@
   &lt;/agent&gt;
 &lt;/javaAgents&gt;
 </code></pre> This is an agent with dummy Maven coordinates and an agent path relative to the module base directory: 
-<pre><code>&lt;javaAgents&gt;
+<pre>&lt;javaAgents&gt;
   &lt;agent&gt;
     &lt;groupId&gt;dummy&lt;/groupId&gt;
-    &lt;artifactId&gt;dummy&lt;/artifactId&gt;
+    &lt;artifactId&gt;dummy&lt;/artifactId&gt;}
     &lt;agentPath&gt;${project.basedir}/lib/agent.jar&lt;/agentClass&gt;
   &lt;/agent&gt;
 &lt;/javaAgents&gt;
-</code></pre> This is an agent with dummy Maven coordinates and an agent path inside the executable JAR, plus an option string: 
+</pre> This is an agent with dummy Maven coordinates and an agent path inside the executable JAR, plus an option string: 
 <pre><code>&lt;javaAgents&gt;
   &lt;agent&gt;
     &lt;groupId&gt;dummy&lt;/groupId&gt;
