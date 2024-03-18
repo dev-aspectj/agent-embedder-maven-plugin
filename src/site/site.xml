@@ -6,6 +6,23 @@
 
   <edit>${project.scm.url}</edit>
 
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-fluido-skin</artifactId>
+    <version>${maven-fluido-skin.version}</version>
+  </skin>
+  <custom>
+    <fluidoSkin>
+      <!-- Suppress both visible generation date and timestamp meta tag -->
+      <skipGenerationDate>true</skipGenerationDate>
+      <gitHub>
+        <projectId>dev-aspectj/${project.artifactId}</projectId>
+        <ribbonOrientation>right</ribbonOrientation>
+        <ribbonColor>gray</ribbonColor>
+      </gitHub>
+    </fluidoSkin>
+  </custom>
+
   <body>
     <!-- This adds more tags, but does not overwrite any existing ones -->
     <breadcrumbs>
@@ -22,6 +39,9 @@
     </menu>
     -->
     <menu ref="reports"/>
+
+    <!-- Suppress copyright notice with current year by deactivating footer -->
+    <footer/>
   </body>
 
 </project>

@@ -8,6 +8,26 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
+  <organization>
+    <name>AspectJ.dev</name>
+    <url>https://github.com/dev-aspectj</url>
+  </organization>
+
+  <name>Agent Embedder Maven Plugin</name>
+  <description>
+    Embeds java agents into an executable JAR file, executing them automatically during application start on JRE 9+
+  </description>
+  <inceptionYear>2024</inceptionYear>
+
+  <url>https://github.com/dev-aspectj/agent-embedder-maven-plugin</url>
+  <licenses>
+    <license>
+      <name>GNU Lesser General Public License v2.1 or later</name>
+      <url>https://spdx.org/licenses/LGPL-2.1-or-later.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
   <properties>
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
@@ -15,7 +35,51 @@
     <parent.java.home>${java.home}</parent.java.home>
     <maven-plugin-tools.version>3.10.2</maven-plugin-tools.version>
     <groovy.version>4.0.19</groovy.version>
+    <maven-plugin-plugin.version>3.11.0</maven-plugin-plugin.version>
+    <doxiaVersion>2.0.0-M8</doxiaVersion>
+    <doxiaSitetoolsVersion>2.0.0-M16</doxiaSitetoolsVersion>
+    <maven-fluido-skin.version>1.11.1</maven-fluido-skin.version>
   </properties>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/dev-aspectj/agent-embedder-maven-plugin/issues/</url>
+  </issueManagement>
+  <ciManagement>
+    <system>GitHub</system>
+    <url>https://github.com/dev-aspectj/agent-embedder-maven-plugin/actions</url>
+  </ciManagement>
+
+  <scm>
+    <connection>scm:git:https://github.com/dev-aspectj/agent-embedder-maven-plugin.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/dev-aspectj/agent-embedder-maven-plugin.git</developerConnection>
+    <url>https://github.com/dev-aspectj/agent-embedder-maven-plugin</url>
+  </scm>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2</url>
+    </repository>
+  </distributionManagement>
+
+  <developers>
+    <developer>
+      <id>kriegaex</id>
+      <name>Alexander Kriegisch</name>
+      <email>kriegaex@aspectj.dev</email>
+      <organization>Scrum-Master.de - Agile Project Management</organization>
+      <organizationUrl>https://scrum-master.de</organizationUrl>
+      <roles>
+        <role>Maintainer</role>
+        <role>Java Developer</role>
+      </roles>
+    </developer>
+  </developers>
 
   <dependencyManagement>
     <dependencies>
@@ -25,6 +89,11 @@
         <version>2.3-groovy-4.0</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven-plugin-plugin.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -107,6 +176,115 @@
   </dependencies>
 
   <build>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.12.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.12.1</version>
+          <configuration>
+            <generateReports>true</generateReports>
+            <generateSitemap>true</generateSitemap>
+            <relativizeDecorationLinks>false</relativizeDecorationLinks>
+            <locales>en</locales>
+            <inputEncoding>UTF-8</inputEncoding>
+            <outputEncoding>UTF-8</outputEncoding>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>${maven-plugin-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>help-mojo</id>
+              <goals>
+                <goal>helpmojo</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-plugin-report-plugin</artifactId>
+          <version>${maven-plugin-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>3.5.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.5</version>
+          <configuration>
+            <skip>false</skip>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-invoker-plugin</artifactId>
+          <version>3.6.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>3.1.0</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <!--
+            Other than Maven Deploy, this plugin cannot just be added to the 'build/plugins' section of the parent POM
+            once and (de-)activated with a simple property like 'maven.deploy.skip' on a per-module basis. See also
+            https://issues.sonatype.org/browse/OSSRH-68966. Consequently, we do not add it to the parent but separately
+            to each module meant to be published.
+          -->
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>1.6.8</version>
+          <extensions>true</extensions>
+          <configuration>
+            <serverId>ossrh</serverId>
+            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+            <!-- Activate in order to directly release to Maven Central after successful staging -->
+            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+          </configuration>
+          <dependencies>
+            <!--
+              Plugin version 1.6.8 does not work on JDK 16+ without special MAVEN_OPTS opening certain modules,
+              because the XStream version used needs it. One workaround is to use a more recent XStream version.
+              Attention: Do *not* upgrade to e.g. 1.4.18, because it causes exceptions during deployment.
+              TODO: remove plugin dependency after OSSRH-66257, NEXUS-26993 are fixed.
+            -->
+            <dependency>
+              <groupId>com.thoughtworks.xstream</groupId>
+              <artifactId>xstream</artifactId>
+              <version>1.4.15</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
     <plugins>
       <plugin>
@@ -214,12 +392,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-report-plugin</artifactId>
-        <version>3.11.0</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>3.5.0</version>
       </plugin>
     </plugins>
   </reporting>
