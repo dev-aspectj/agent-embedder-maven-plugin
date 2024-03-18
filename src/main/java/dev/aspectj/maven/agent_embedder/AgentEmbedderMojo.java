@@ -150,15 +150,15 @@ public class AgentEmbedderMojo extends AbstractMojo {
    * </javaAgents>
    * }</pre>
    * This is an agent with dummy Maven coordinates and an agent path relative to the module base directory:
-   * <pre>{@code
-   * <javaAgents>
-   *   <agent>
-   *     <groupId>dummy</groupId>
-   *     <artifactId>dummy</artifactId>
-   *     <agentPath>${project.basedir&#125;/lib/agent.jar</agentClass>
-   *   </agent>
-   * </javaAgents>
-   * }</pre>
+   * <pre>
+   * &lt;javaAgents&gt;
+   *   &lt;agent&gt;
+   *     &lt;groupId&gt;dummy&lt;/groupId&gt;
+   *     &lt;artifactId&gt;dummy&lt;/artifactId&gt;}
+   *     &lt;agentPath&gt;${project.basedir}/lib/agent.jar&lt;/agentClass&gt;
+   *   &lt;/agent&gt;
+   * &lt;/javaAgents&gt;
+   * </pre>
    * This is an agent with dummy Maven coordinates and an agent path inside the executable JAR, plus an option string:
    * <pre>{@code
    * <javaAgents>
@@ -171,6 +171,8 @@ public class AgentEmbedderMojo extends AbstractMojo {
    * </javaAgents>
    * }</pre>
    */
+  // TODO: In the second code block above, the curly brace derails formatting in Maven Site. Use inline "{@code ...}"
+  //       instead of escaped '<' and '>' characters after https://issues.apache.org/jira/browse/MPLUGIN-513 fix.
   @Parameter(required = true)
   protected List<JavaAgentInfo> javaAgents;
 
