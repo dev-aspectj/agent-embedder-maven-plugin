@@ -85,20 +85,20 @@ agents, but since Java 9 there is the
 which can launch a java agent from inside the executable JAR, if the agent classes are part of the JAR. I.e., even
 though this plugin works just fine on Java 8, you do need to launch the modified executable JAR on JRE 9+ to enjoy the
 benefits of this JVM feature.</p>
-<p>See the <a href="usage.html">usage</a> and <a href="plugin-info.html">plugin info</a> pages for more details about the plugin works and
+<p>See the <a href="usage.html">usage</a> and <a href="plugin-info.html">plugin info</a> pages for more details about how the plugin works and
 how to configure it.</p>
 <p>Unique plugin features not offered by the Java 9+ <code>Launcher-Agent-Class</code> mechanism:</p>
 <ul>
 
 <li>
 
-<p>Via <code>Launcher-Agent-Class</code>, the JVM only supports a single agent for auto-start, not multiple ones. Multiple agents
-can only be specified on the JVM command line. But this plugin installs its own launcher agent, which in turn is capable
-of starting <b>multiple java agents</b>.</p>
+<p>Out of the box, the JVM only supports a single agent for auto-start, not multiple ones. Multiple agents can only be
+specified on the JVM command line. But this plugin installs its own launcher agent, which in turn is capable of
+starting <b>multiple java agents</b>.</p>
 </li>
 <li>
 
-<p><code>Launcher-Agent-Class</code> also does not support <b>agent option strings</b> like the JVM command line does. This plugin,
+<p>The JVM does not support <b>agent option strings</b> for embedded agents like the JVM command line does. This plugin,
 however, does support agent arguments via its launcher agent.</p>
 </li>
 </ul>
